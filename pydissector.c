@@ -109,9 +109,16 @@ end:
   return NULL;
 }
 
-void printPyInterpreterFrame(pid_t pid, void* ptr) {
+void printPyInterpreterFrame(pid_t pid, void* ptr, _Py_DebugOffsets offsets) {
 	/* Prints information about the _PyInterpreterFrame given in virtual pointer ptr */
+	void* PyCodeObject = deref_vptr(pid, ptr + offsets.interpreter_frame.executable);
+	char* functionName = deref_asciistring(pid, deref_vptr(pid, PyCodeObject + offsets.code_object.name));
 
+	printf("== Call Frame Info ==\n");
+	printf("Function Name: %s\n", functionName);
+	printf("=====================\n");
+
+	free(functionName);
 }
 
 int start(char* pid) {
@@ -157,7 +164,8 @@ int start(char* pid) {
   printf("CurrentFrame -> %p [Offset: %ld]\n", cframe, offsets.thread_state.cframe);
   printf("_PyInterpreterFrame -> %p [Offset: %ld]\n", frame, offsets.cframe.current_frame); 
 
-  printPyInterpreterFrame(intpid, frame);
+  printf("\n\n");
+  printPyInterpreterFrame(intpid, frame, offsets);
   
   /* Detach from process */
   ptrace(PTRACE_DETACH, intpid, NULL, NULL);
